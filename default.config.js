@@ -1,7 +1,8 @@
 export default {
   webserver: {
+    port: 8080,
     logger: false,
-    certificate: 'http2cert/localhost+2.pem',
-    key: 'http2cert/localhost+2-key.pem'
+    certificate: process.env.MIRRORIZE_CERT,
+    key: process.env.MIRRORIZE_KEY
   }
 }
