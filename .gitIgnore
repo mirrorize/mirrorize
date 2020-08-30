@@ -1,0 +1,19 @@
+.env
+
+custom.config.js
+
+node_modules
+
+package-lock.json
+
+components
+
+clients
+
+# HTTPS/HTTP2
+*.key
+*.pem
+*.crt
+*.csr
+*.csr.cnf
+*.srl
