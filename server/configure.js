@@ -21,24 +21,18 @@ function mergeDeep (base, over) {
 function Configure (fPath) {
   return new Promise((resolve, reject) => {
     try {
-      var cp = path.join(fPath, 'custom.config.js')
-      var dp = path.join(fPath, 'default.config.js')
-
-      var promises = []
-      if (fs.existsSync(cp)) {
-        promises.push(import(cp))
-      }
-      if (fs.existsSync(dp)) {
-        promises.push(import(dp))
-      }
-
-      var ret = {}
-      Promise.allSettled(promises).then((modules) => {
-        for (var module of modules) {
-          ret = mergeDeep(ret, module.value.default)
-        }
+      (async () => {
+        var cp = path.join(fPath, 'custom.config.js')
+        var dp = path.join(fPath, 'default.config.js')
+        var cc = await import(cp).catch((e) => {
+          console.warn(`Invalid config file: ${cp}`)
+        })
+        var dc = await import(dp).catch((e) => {
+          console.warn(`Invalid config file: ${dp}`)
+        })
+        var ret = mergeDeep((dc?.default || {}), (cc?.default || {}))
         resolve(ret)
-      })
+      })()
     } catch (e) {
       reject(e)
     }

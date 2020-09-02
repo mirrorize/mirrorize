@@ -1,57 +1,32 @@
 import fs from 'fs'
 import path from 'path'
+import Worker from './worker.js'
 
 class _Workers {
-  constructor () {
-    this.config = {}
-    this.workers = []
-  }
+  #config = {}
+  #workers = []
 
-  init (config, components = []) {
+  init (config, packages) {
     return new Promise((resolve, reject) => {
-      this.config = config || {}
-      if (!Array.isArray(components)) {
-        reject(new Error('Invalid components data'))
+      this.#config = config || {}
+      if (!(packages instanceof Map)) {
+        reject(new Error('Invalid packages data'))
         return
       }
-      var promises = []
-      for (var { name, componentPath } of components) {
-        promises.push(this.scanWorker(componentPath))
-      }
-      Promise.all(promises).then((workers) => {
-        for (var w of workers) {
-          if (w instanceof Error) {
-            reject(w)
-            return
-          }
-          if (w) { // null or undefined if worker has no explicit worker(index.js)
-            Object.defineProperty(w, 'name', { value: name })
-            this.workers.push(w)
-          }
+
+      (async() => {
+        for (var [name, pkg] of packages) {
+          const workerPath = path.join(pkg.workerPath, 'index.js')
+          if (!fs.existsSync(workerPath)) continue
+          var module = await import(workerPath).catch(reject)
+          var Klass = module.default
+          var worker = new Klass(pkg.workerConfig)
+          Object.defineProperty(worker, 'name', { value: name })
+          worker.onConstruction()
+          this.#workers.push(worker)
         }
         resolve()
-      }).catch(reject)
-    })
-  }
-
-  scanWorker (dPath) {
-    return new Promise((resolve, reject) => {
-      try {
-        const wPath = path.join(dPath, 'worker', 'index.js')
-        if (fs.existsSync(wPath)) {
-          import(wPath).then((module) => {
-            resolve(module.default)
-          }).catch((e) => {
-            console.warn('Invalid worker module:', wPath)
-            console.error(e)
-            resolve(e)
-          })
-        } else {
-          resolve(null)
-        }
-      } catch (e) {
-        reject(e)
-      }
+      })()
     })
   }
 }
