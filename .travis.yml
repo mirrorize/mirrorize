@@ -1,0 +1,6 @@
+language: node_js
+node_js:
+  - lts/*
+  - 14.9
+before_install:
+  - npm i -g npm@6.14.8

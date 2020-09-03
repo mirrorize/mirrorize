@@ -1,0 +1,37 @@
+{
+  "en": {
+    "translations": {
+      "WORKERS_INVALID_PKG_DATA": "Invalid packages",
+      "WEBSERVER_INVALID_CERT": "Invalid SSL certificate or key. Check your `http2cert` directory.",
+      "INDEX_ERR_UNCAUGHT_EXCEPTION": "> Uncaught exception. Usually this could happen in abnormal unpredictable conditions.",
+      "INDEX_ERR_UNHANDLED_REJECTION": "> Unhandled rejection. Usually this might cause a critical error so it needs to be cheked by its developer.",
+      "INDEX_ERR_UR_AT_PROMISE": "{{reason}} at Promise:\n",
+      "CONFIGURE_INVALID_CONFIG_FILE": "Invalid config file: {{file:shortPath}}",
+      "CONFIGURE_INVALID_CONFIG_FILE2": "> This config file will be ignored.",
+      "PACKAGES_INVALID_CONFIG": "> Invalid package config: {{file:shortPath}}",
+      "PACKAGES_INVALID_PKG_DIR": "Invalid package directory: {{dir:shortPath}}",
+      "WORKER_MSG_CONSTRUCTED": "Worker:{{name}} is constructed."
+    },
+    "formatters": {
+      "shortPath": {
+        "format": "shorten",
+        "pre": 10,
+        "post": 40
+      }
+    },
+    "pluralRules": {
+      "s": {
+        "one": "",
+        "many": "s"
+      },
+      "es": {
+        "one": "",
+        "many": "es"
+      },
+      "is": {
+        "one": "is",
+        "many": "are"
+      }
+    }
+  }
+}

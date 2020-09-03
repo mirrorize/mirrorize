@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import Worker from './worker.js'
+import _ from './systemtranslate.js'
+// import Worker from './worker.js'
 
 class _Workers {
   #config = {}
@@ -10,7 +11,7 @@ class _Workers {
     return new Promise((resolve, reject) => {
       this.#config = config || {}
       if (!(packages instanceof Map)) {
-        reject(new Error('Invalid packages data'))
+        reject(new Error(_('WORKERS_INVALID_PKG_DATA')))
         return
       }
 
@@ -22,7 +23,7 @@ class _Workers {
           var Klass = module.default
           var worker = new Klass(pkg.workerConfig)
           Object.defineProperty(worker, 'name', { value: name })
-          worker.onConstruction()
+          worker._constructed()
           this.#workers.push(worker)
         }
         resolve()

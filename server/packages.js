@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import Configure from './configure.js'
+import _ from './systemtranslate.js'
+import { Configure, Logger } from '#lib'
 
 class _Packages {
   #config = {}
@@ -23,11 +24,11 @@ class _Packages {
           }
           resolve()
         }).catch((e) => {
-          console.warn(e.message)
-          console.error(e)
+          log.warn(e.message)
+          log.error(e)
         })
       } else {
-        var e = new Error(`Invalid packages directory.[${dPath}]`)
+        var e = new Error(_('PACKAGES_INVALID_PKG_DIR', { dir: dPath }))
         reject(e)
       }
     })
@@ -56,8 +57,8 @@ class _Packages {
           }
           resolve(p)
         }).catch((e) => {
-          console.warn(e.message)
-          console.warn(`Invalid package config:${wPath}`)
+          log.warn(e.message)
+          log.warn(_('PACKAGES_INVALID_CONFIG', {file: wPath}))
           resolve(null)
         })
       } catch (e) {

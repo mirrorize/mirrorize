@@ -1,3 +1,5 @@
+import _ from './systemtranslate.js'
+import { Logger } from '#lib'
 import fs from 'fs'
 import path from 'path'
 import fastify from 'fastify'
@@ -34,7 +36,7 @@ class _Webserver {
       var kp = path.join(__basename, key)
       var cp = path.join(__basename, cert)
       if (!fs.existsSync(kp) || !fs.existsSync(cp)) {
-        const e = new Error('Invalid SSL certificate or key. Check your http2cert directory.')
+        const e = new Error(_(WEBSERVER_INVALID_CERT))
         return e
       }
       opts.https = {

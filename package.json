@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "link-module-alias"
+    "start": "node ./index.js"
   },
   "repository": {
     "type": "git",
@@ -28,21 +28,32 @@
     "standard": "^14.3.4"
   },
   "dependencies": {
+    "chalk": "^4.1.0",
     "dotenv": "^8.2.0",
     "fastify": "^3.3.0",
     "fastify-cookie": "^4.0.2",
     "fastify-session": "^5.0.0",
     "fastify-static": "^3.2.0",
+    "intl": "^1.2.5",
+    "intl-locales-supported": "^1.8.12",
     "link-module-alias": "^1.2.0",
+    "loglevel": "^1.7.0",
+    "loglevel-plugin-prefix": "^0.8.4",
     "uuid": "^8.3.0"
   },
   "engines": {
     "node": ">=14.9.0",
     "npm": ">=6.14.8"
   },
+  
+  "imports": {
+    "#lib": "./lib/index.js"
+  },
+
   "_moduleAliases": {
-    "@root": ".",
-    "@lib": "./lib/index.js",
-    "@server": "./server"
+    "-root": ".",
+    "-lib": "./lib/index.js",
+    "-server": "./server",
+    "-shared": "./shared"
   }
 }
