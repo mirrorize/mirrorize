@@ -5,7 +5,7 @@ var log = console
 if (isBrowser) {
   log = console
 } else {
-  import('-lib').then(({ Logger }) => {
+  import('#lib').then(({ Logger }) => {
     log = Logger('TRANSLATE')
   })
 }

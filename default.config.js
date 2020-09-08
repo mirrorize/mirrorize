@@ -9,7 +9,7 @@ export default {
       certificate: process.env.MZ_HTTP2_CERT,
       key: process.env.MZ_HTTP2_KEY,
       fastifyOptions: {
-        logger: false
+        logger: true
       }
     },
     admin: {

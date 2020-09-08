@@ -31,7 +31,10 @@ const scenario = async () => {
   await Packages.init(config, path.join(__dirname, 'packages')).catch(scenarioError)
   await Workers.init(config, Packages.getActivePackages()).catch(scenarioError)
   await Webserver.init(config.server || {}).catch(scenarioError)
-  await Webserver.prepareRoutes().catch(scenarioError)
+
+
+
+  await Workers.ready()
 
 
 

@@ -6,7 +6,7 @@ before_install:
 arch:
   - amd64
   - arm64
+  - arm32
 os:
   - linux
   - osx
-  - windows

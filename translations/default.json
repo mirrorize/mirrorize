@@ -10,7 +10,8 @@
       "CONFIGURE_INVALID_CONFIG_FILE2": "> This config file will be ignored.",
       "PACKAGES_INVALID_CONFIG": "> Invalid package config: {{file:shortPath}}",
       "PACKAGES_INVALID_PKG_DIR": "Invalid package directory: {{dir:shortPath}}",
-      "WORKER_MSG_CONSTRUCTED": "Worker:{{name}} is constructed."
+      "WORKER_MSG_CONSTRUCTED": "Worker:{{name}} is constructed.",
+      "WORKER_NO_ASSETS_DIR": "There is something wrong in {{dir:shortPath}}, It will be ignored."
     },
     "formatters": {
       "shortPath": {

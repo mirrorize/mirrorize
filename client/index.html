@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv='cache-control' content='no-cache'>
+    <meta http-equiv='expires' content='0'>
+    <meta http-equiv='pragma' content='no-cache'>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <title>MIRRORIZED</title>
+    <!-- Don't remove below lines -->
+    <!-- This is unsafe CSP rules, but some external module developers might want to import external scripts. -->
+    <meta id="csp" http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline';"/>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/_/sw.js').then(function(registration) {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          }, function(err) {
+            console.log('ServiceWorker registration failed: ', err);
+          })
+        })
+      }
+    </script>
+    <script type="module" src="/_/main.js"></script>
+    {{ASSETS}}
+    <!-- Don't remove above lines -->
+  </head>
+  <body>
+    <div id="temp">oops!</div>
+    <div> wow </div>
+  </body>
+</html>

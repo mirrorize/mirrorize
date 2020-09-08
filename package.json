@@ -29,15 +29,20 @@
   "dependencies": {
     "chalk": "^4.1.0",
     "dotenv": "^8.2.0",
+    "etag": "^1.8.1",
     "fastify": "^3.3.0",
+    "fastify-auto-push": "^0.4.0",
     "fastify-cookie": "^4.0.2",
     "fastify-session": "^5.0.0",
     "fastify-static": "^3.2.0",
+    "globby": "^11.0.1",
     "intl": "^1.2.5",
     "intl-locales-supported": "^1.8.12",
     "link-module-alias": "^1.2.0",
     "loglevel": "^1.7.0",
     "loglevel-plugin-prefix": "^0.8.4",
+    "mime": "^2.4.6",
+    "sw-toolbox": "^3.6.0",
     "uuid": "^8.3.0"
   },
   "engines": {
@@ -46,11 +51,5 @@
   },
   "imports": {
     "#lib": "./lib/index.js"
-  },
-  "_moduleAliases": {
-    "-root": ".",
-    "-lib": "./lib/index.js",
-    "-server": "./server",
-    "-shared": "./shared"
   }
 }

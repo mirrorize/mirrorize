@@ -1,6 +1,10 @@
 import fs from 'fs'
 import path from 'path'
 import _ from './systemtranslate.js'
+import { Logger, __basepath, createMessenger } from '#lib'
+
+const log = Logger('WORKERS')
+
 // import Worker from './worker.js'
 
 class _Workers {
@@ -23,12 +27,35 @@ class _Workers {
           var Klass = module.default
           var worker = new Klass(pkg.workerConfig)
           Object.defineProperty(worker, 'name', { value: name })
-          worker._constructed()
+          await worker._constructed()
           this.#workers.push(worker)
         }
         resolve()
       })()
     })
+  }
+
+  ready () {
+    return new Promise((resolve, reject) => {
+      this.getActiveWorkers().forEach((worker) => {
+        worker._ready()
+      })
+    })
+  }
+
+  getActiveWorkers () {
+    return this.#workers.filter((a) => {
+      return !(a.disabled)
+    })
+  }
+
+  gatherActiveAssets() {
+    var r = []
+    r = this.getActiveWorkers().reduce((result, a) => {
+      result = [...result, ...a.assets]
+      return result
+    }, r)
+    return r
   }
 }
 
