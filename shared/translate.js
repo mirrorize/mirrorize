@@ -162,6 +162,13 @@ function Translate (locale = []) {
     if (text.length < maxLength) return text
     return text.slice(0, pre) + omitted + text.slice((0 - post))
   })
+  r.registerFormatter('cuttext', function (locales, text, options = {}) {
+    if (typeof text !== 'string') text = text.toString() || ''
+    if (!options.search) return text
+    var { omitted="...", search } = options
+    var len = search.length
+    return omitted + text.slice(text.indexOf(search) + len)
+  })
   return r
 }
 

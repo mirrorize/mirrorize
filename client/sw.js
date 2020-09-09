@@ -1,10 +1,42 @@
+/* global importScripts, workbox, self */
 (global => {
-  importScripts('/_/node_modules/sw-toolbox/sw-toolbox.js')
+  importScripts('/_/node_modules/workbox-sw/build/workbox-sw.js')
 
-  toolbox.router.get('/_/(.*)', global.toolbox.fastest)
+  workbox.routing.registerRoute(
+    new RegExp('/_/.*$'),
+    new workbox.strategies.StaleWhileRevalidate({
+      cacheName: 'static',
+      plugins: [
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200]
+        })
+      ]
+    })
+  )
+  workbox.routing.registerRoute(
+    /^\/\w+\.\w+$/,
+    new workbox.strategies.StaleWhileRevalidate({
+      cacheName: 'client',
+      plugins: [
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200]
+        })
+      ]
+    })
+  )
+  workbox.routing.registerRoute(
+    new RegExp('/'),
+    new workbox.strategies.StaleWhileRevalidate({
+      cacheName: 'root',
+      plugins: [
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200]
+        })
+      ]
+    })
+  )
 
-
-  // Ensure that our service worker takes control of the page as soon as possible.
-  global.addEventListener('install', event => event.waitUntil(global.skipWaiting()));
-  global.addEventListener('activate', event => event.waitUntil(global.clients.claim()));
+  // Set a default network-first strategy to use when
+  // there is no explicit matching route:
+  // workbox.routing.setDefaultHandler(new workbox.strategies.NetworkFirst())
 })(self)

@@ -2,6 +2,10 @@ import fs from 'fs'
 import path from 'path'
 import _ from './systemtranslate.js'
 import { Configure, Logger } from '#lib'
+import scanAssets from './asset.js'
+
+const log = Logger('PACKAGES')
+log.log(_('PACKAGES_IS_LOADING'))
 
 class _Packages {
   #config = {}
@@ -36,37 +40,44 @@ class _Packages {
 
   #readPackages (pPath) {
     return new Promise((resolve, reject) => {
-      try {
-        if (!fs.existsSync(pPath)) resolve(null)
-        var wPath = path.join(pPath, 'worker')
-        var aPath = path.join(pPath, 'assets')
-        Configure(wPath).then((config) => {
-          const name = pPath.split('/').pop()
-          var p = {
-            name: name,
-            disabled: (config?.disabled) || false,
-            packagePath: pPath,
-            workerPath: wPath,
-            assetPath: aPath,
-            worker: 'index.js',
-            templates: this.#scanTemplates(aPath),
-            css: this.#scanCss(aPath),
-            elements: [],
-            js: this.#scanJs(aPath),
-            workerConfig: config
-          }
-          resolve(p)
-        }).catch((e) => {
-          log.warn(e.message)
-          log.warn(_('PACKAGES_INVALID_CONFIG', {file: wPath}))
-          resolve(null)
-        })
-      } catch (e) {
-        reject(e)
-      }
+      (async () => {
+        try {
+          if (!fs.existsSync(pPath)) resolve(null)
+          var wPath = path.join(pPath, 'worker')
+          var aPath = path.join(pPath, 'assets')
+          Configure(wPath).then(async (config) => {
+            const name = pPath.split('/').pop()
+            var assets = await scanAssets(aPath, (_path) => {
+              return path.join('/_/assets', name, _path)
+            })
+            var p = {
+              name: name,
+              disabled: (config?.disabled) || false,
+              packagePath: pPath,
+              workerPath: wPath,
+              // assetPath: aPath,
+              worker: 'index.js',
+              // templates: this.#scanTemplates(aPath),
+              // css: this.#scanCss(aPath),
+              // elements: [],
+              // js: this.#scanJs(aPath),
+              workerConfig: config,
+              assets: assets
+            }
+            resolve(p)
+          }).catch((e) => {
+            log.warn(e.message)
+            log.warn(_('PACKAGES_INVALID_CONFIG', { file: wPath }))
+            resolve(null)
+          })
+        } catch (e) {
+          reject(e)
+        }
+      })()
     })
   }
 
+  /*
   #scanTemplates (pPath) {
     if (!fs.existsSync(pPath)) return []
     var tPath = path.join(pPath, 'templates')
@@ -103,7 +114,7 @@ class _Packages {
         return dirent.name
       })
   }
-
+*/
   #scanPackages (dPath) {
     return fs.readdirSync(dPath, { withFileTypes: true })
       .filter((dirent) => {
@@ -116,7 +127,6 @@ class _Packages {
         return /^[a-z0-9A-Z]/i.test(name)
       })
   }
-
 
   /**
    * packageInfo
@@ -132,6 +142,7 @@ class _Packages {
    * @property {Array<string>} js
    * @property {Array<string>} elements
    * @property {Object} workderConfig
+   * @property {Array<Object>} assets
    */
 
   /**
@@ -150,10 +161,19 @@ class _Packages {
    */
   getActivePackages () {
     var ret = new Map()
-    for (let [key, value] of this.#packages) {
+    for (const [key, value] of this.#packages) {
       if (!value?.disabled) ret.set(key, value)
     }
     return ret
+  }
+
+  getActiveAssets () {
+    var assets = []
+    var itr = this.getActivePackages()
+    for (const pkg of itr.values()) {
+      assets = [...assets, ...pkg.assets]
+    }
+    return assets
   }
 }
 

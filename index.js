@@ -1,8 +1,9 @@
 import './server/env.js'
 import path from 'path'
 import fs from 'fs'
-import { Logger, Configure, Packages, Webserver, Workers } from '#lib'
+import { Logger, Configure, Packages, Webserver, Workers, Clients } from '#lib'
 import _ from './server/systemtranslate.js'
+import { ClientRequest } from 'http'
 
 const __dirname = path.resolve()
 
@@ -28,6 +29,7 @@ const scenario = async () => {
   }
 
   var config = await Configure(__dirname).catch(scenarioError)
+  await Clients.init(config).catch(scenarioError)
   await Packages.init(config, path.join(__dirname, 'packages')).catch(scenarioError)
   await Workers.init(config, Packages.getActivePackages()).catch(scenarioError)
   await Webserver.init(config.server || {}).catch(scenarioError)

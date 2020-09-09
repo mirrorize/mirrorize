@@ -1,19 +1,19 @@
 import _ from './systemtranslate.js'
-import { Logger, Workers, __basepath } from '#lib'
+import { Clients, Packages, Logger, Workers, scanAssets, __basepath } from '#lib'
 import fs from 'fs'
 import path from 'path'
-import http2 from 'http2'
+// import http2 from 'http2'
 import fastify from 'fastify'
 import fastifyStatic from 'fastify-static'
 import fastifyCookie from 'fastify-cookie'
 import fastifySession from 'fastify-session'
-import pkg from 'fastify-auto-push'
+// import pkg from 'fastify-auto-push'
 import { v4 as uuidv4 } from 'uuid'
-import globby from 'globby'
-import mime from 'mime'
-import etag from 'etag'
+// import globby from 'globby'
 
-//const fastifyStatic = pkg.staticServe
+// import { request } from 'http'
+
+// const fastifyStatic = pkg.staticServe
 
 const log = Logger('WEBSERVER')
 
@@ -23,24 +23,29 @@ class _Webserver {
   #config = {}
   #server = null
   #assetHTML = ''
-  #assets = []
   #http2 = true
   #mainAssets = []
+  #clientAssets = {}
+  #packageAssets = []
 
   init (config = {}) {
-    return new Promise(async (resolve, reject) => {
-      this.#config = config
-      this.#mainAssets = await this.#prepareAssets()
-      var r = this.#initServer(config.webserver)
-      if (r instanceof Error) {
-        reject(r)
-        return
-      }
-      resolve()  
+    return new Promise((resolve, reject) => {
+      (async () => {
+        this.#config = config
+        this.#mainAssets = await this.#prepareAssets()
+        this.#packageAssets = await this.#preparePackageAssets()
+        this.#clientAssets = await this.#prepareClientAssets()
+        var r = this.#initServer(config.webserver)
+        if (r instanceof Error) {
+          reject(r)
+          return
+        }
+        resolve()
+      })()
     })
   }
 
-  #renderIndex() {
+  #renderIndex (client) {
     if (this.#assetHTML) return this.#assetHTML
     const dress = (assets) => {
       var text = ''
@@ -56,8 +61,7 @@ class _Webserver {
       }
       return text
     }
-    var assets = Workers.gatherActiveAssets()
-    this.#assets = assets
+    var assets = [...this.#mainAssets, ...this.#packageAssets, ...this.#clientAssets[client]]
     var result = dress(assets)
     var hPath = path.join(__basename, 'client', 'index.html')
     var html = fs.readFileSync(hPath, { encoding: 'UTF-8' })
@@ -65,12 +69,6 @@ class _Webserver {
     this.#assetHTML = html
     return html
   }
-
-  /* used???
-  register (options) {
-    this.#server.register(options)
-  }
-  */
 
   #initServer (config) {
     this.#http2 = config.useHTTP2
@@ -83,7 +81,7 @@ class _Webserver {
       var kp = path.join(__basename, key)
       var cp = path.join(__basename, cert)
       if (!fs.existsSync(kp) || !fs.existsSync(cp)) {
-        const e = new Error(_(WEBSERVER_INVALID_CERT))
+        const e = new Error(_('WEBSERVER_INVALID_CERT'))
         return e
       }
       opts.https = {
@@ -91,7 +89,7 @@ class _Webserver {
         cert: fs.readFileSync(cp)
       }
     }
-    var opts = Object.assign({}, opts, config.fastifyOptions)
+    opts = Object.assign({}, opts, config.fastifyOptions)
     var server = fastify(opts)
 
     const workers = Workers.getActiveWorkers()
@@ -101,7 +99,7 @@ class _Webserver {
       server.register(fastifyStatic, {
         root: path.join(aPath),
         prefix: '/_/assets/' + w.name,
-        decorateReply:false
+        decorateReply: false
       })
     }
     server.register(fastifyStatic, {
@@ -131,7 +129,7 @@ class _Webserver {
     })
     server.register(fastifyStatic, {
       root: path.join(__basename, 'client'),
-      prefix: '/_/',
+      prefix: '/',
       decorateReply: false
     })
 
@@ -144,47 +142,51 @@ class _Webserver {
       }
     })
 
-    
-
     server.route({
       method: 'GET',
       url: '/',
       schema: {
-        querystring: { client: {type: 'string'}}
+        querystring: { client: { type: 'string' } }
       },
       handler: async (req, reply) => {
-        return this.#serveIndex(req, reply)
+        return await this.#serveIndex(req, reply)
       }
     })
 
     this.#server = server
 
     const port = config?.port || '8080'
-    server.listen(port)
+    server.listen(port, (err, address) => {
+      if (err) {
+        log.error(err)
+      } else {
+        log.info(_('WEBSERVER_SERVING_ADDRESS', { address: address }))
+      }
+    })
   }
 
-  
-
   async #serveIndex (req, reply) {
+    var client = req.query.client || 'default'
+    req.session.client = client
+    reply.type('text/html').send(this.#renderIndex(client))
     const sendFile = (stream, obj) => {
       return new Promise((resolve, reject) => {
         const headers = {}
         if (obj.contentLength) headers['content-length'] = obj.contentLength
         if (obj.lastModified) headers['last-modified'] = obj.lastModified
         if (obj.contentType) headers['content-type'] = obj.contentType
-        if (obj.etag) headers['ETag'] = obj.etag
+        if (obj.etag) headers.ETag = obj.etag
         stream.respond({ ':status': 200, 'content-type': obj.contentType })
         stream.end(fs.readFileSync(obj.filePath))
-        stream.on("close", () => {
-          log.info("Server Push", obj.filePath)
+        stream.on('close', () => {
+          log.info(_('WEBSERVER_SERVER_PUSH', { file: obj.filePath }))
           resolve()
         })
-        
       })
     }
     const pushFile = (stream, obj) => {
       return new Promise((resolve, reject) => {
-        stream.pushStream({ ":path": obj.url }, (err, pushStream) => {
+        stream.pushStream({ ':path': obj.url }, (err, pushStream) => {
           if (err) {
             throw err
           }
@@ -195,47 +197,49 @@ class _Webserver {
       })
     }
     const stream = req.raw.stream
-
     if (this.#http2) {
-      var assets = Workers.gatherActiveAssets()
-      assets = [...assets, ...this.#mainAssets]
-      var promises = []
+      var assets = [...this.#mainAssets, ...this.#packageAssets, ...this.#clientAssets[client]]
       for (var a of assets) {
         await pushFile(stream, a)
       }
-    }    
-    reply.type('text/html').send(this.#renderIndex())
+    }
   }
 
   async #prepareAssets () {
-    return new Promise(async (resolve, reject) => {
-      const cands = ['translations', 'shared', 'resources']
-      var assets = []
-      for (var cand of cands) {
-        var aPath = cand
-        var aURL = '/_'  
-
-        var files = await globby(path.join(aPath, '/**/*'), {
-          objectMode: true,
-          onlyFiles: true, 
-        })
-        for (const file of files) {
-          const { name, path:fPath } = file
-          var rPath = path.join(__basepath, fPath)
-          const stat = fs.lstatSync(rPath)
-          assets.push({
-            type: cand,
-            url: path.join(aURL, fPath),
-            internal: true,
-            contentLength: stat.size,
-            lastModified: stat.mtime.toUTCString(),
-            contentType: mime.getType(name),
-            filePath: rPath,
-            etag: etag(stat)
-          })
+    return new Promise((resolve, reject) => {
+      (async () => {
+        try {
+          const cands = ['translations', 'shared', 'resources', 'client']
+          var assets = []
+          for (var cand of cands) {
+            var cPath = path.join(__basepath, cand)
+            var asset = await scanAssets(cPath, (url) => {
+              if (cand === 'client') return path.join('/_/', url)
+              return path.join('/_/', cand, url)
+            })
+            assets = [...assets, ...asset]
+          }
+          resolve(assets)
+        } catch (e) {
+          reject(e)
         }
-      }
-      resolve(assets)
+      })()
+    })
+  }
+
+  #preparePackageAssets () {
+    return new Promise((resolve, reject) => {
+      (async () => {
+        resolve(await Packages.getActiveAssets())
+      })()
+    })
+  }
+
+  #prepareClientAssets () {
+    return new Promise((resolve, reject) => {
+      (async () => {
+        resolve(await Clients.getAssets())
+      })()
     })
   }
 }

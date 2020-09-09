@@ -2,6 +2,9 @@
 // Copy this file and rename it as `custom.config.js`, then use it.
 
 export default {
+  clients: {
+    default: 'default'
+  },
   server: {
     webserver: {
       port: 8080,
@@ -15,12 +18,10 @@ export default {
     admin: {
       port: 8081,
       useHTTP2: false,
-      logger: false,
       certificate: null,
       key: null,
       username: process.env.MZ_ADMIN_USERNAME,
       password: process.env.MZ_ADMIN_PASSWORD
     }
-  },
-  
+  }
 }

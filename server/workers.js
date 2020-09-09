@@ -1,9 +1,10 @@
 import fs from 'fs'
 import path from 'path'
 import _ from './systemtranslate.js'
-import { Logger, __basepath, createMessenger } from '#lib'
+import { Logger } from '#lib'
 
 const log = Logger('WORKERS')
+log.log(_('WORKERS_LOADED'))
 
 // import Worker from './worker.js'
 
@@ -19,7 +20,7 @@ class _Workers {
         return
       }
 
-      (async() => {
+      (async () => {
         for (var [name, pkg] of packages) {
           const workerPath = path.join(pkg.workerPath, 'index.js')
           if (!fs.existsSync(workerPath)) continue
@@ -49,7 +50,7 @@ class _Workers {
     })
   }
 
-  gatherActiveAssets() {
+  getActiveAssets () {
     var r = []
     r = this.getActiveWorkers().reduce((result, a) => {
       result = [...result, ...a.assets]

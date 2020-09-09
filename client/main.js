@@ -1,7 +1,11 @@
+/* global DocumentFragment */
 // import '/_/node_modules/loglevel/dist/loglevel.js'
 // log.warn('test')
 
-import Translate from '/_/shared/translate.js'
+// import Translate from '_/shared/translate.js'
+
+import test from './_/assets/core/modulejs/testmodule.js'
+console.warn(test)
 
 class _M {
   constructor () {
@@ -33,7 +37,6 @@ class _M {
     readonly('clientUID', this.clientName + '_' + Date.now())
     this.templates = new DocumentFragment()
     this.onReadyJobs = []
-    
   }
 }
 

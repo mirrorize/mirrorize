@@ -1,5 +1,5 @@
 import _ from './systemtranslate.js'
-import { Logger, __basepath, createMessenger } from '#lib'
+import { Logger, __basepath, createMessenger, scanAssets } from '#lib'
 import path from 'path'
 import fs from 'fs'
 import mime from 'mime'
@@ -24,12 +24,15 @@ class Worker {
       log.info(_('WORKER_MSG_CONSTRUCTED', { name: this.name }))
       this.#_initialize()
       this.onConstruction()
+      
       this.#_prepareAssets().then((assets) => {
-        Object.defineProperty(this, 'assets', {
+        Object.defineProperty(this, 'extAssets', {
           value: assets
         })
         resolve()
       })
+      
+     resolve()
     })
   }
 
@@ -59,35 +62,6 @@ class Worker {
   #_prepareAssets () {
     return new Promise(async (resolve, reject) => {
       var assets = []
-      var aPath = path.join('./', this.packagePath, 'assets')
-      var aURL = path.join('/_/assets', this.name)
-      var files = await globby(aPath + '/**/*', {
-        objectMode: true,
-        onlyFiles: true,
-      })
-
-      for (const file of files) {
-        var { name, path: fPath} = file
-        var d = fPath.split('/').slice(2)
-        var isAsset = d.shift()
-        var dir = d.shift()
-        d.unshift(dir)
-        if (d.length <= 0) dir = ''
-        var remain = d.join('/')
-        var rPath = path.join(__basepath, this.packagePath, 'assets', remain)
-        var stat = fs.lstatSync(rPath)
-        assets.push({
-          type: (dir) ? dir : null,
-          url: path.join('/_/assets', this.name, remain),
-          internal: true,
-          contentLength: stat.size,
-          lastModified: stat.mtime.toUTCString(),
-          contentType: mime.getType(name),
-          filePath: rPath,
-          etag: etag(stat)
-        })
-      }
-
       var extern = [
         { name: 'injectExternJS', type: 'js'},
         { name: 'injectExternModuleJS', type: 'modulejs'},

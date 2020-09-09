@@ -1,7 +1,6 @@
 import events from 'events'
 import _ from './systemtranslate.js'
-import { Logger } from '#lib'
-import log from 'loglevel'
+// import { Logger } from '#lib'
 
 const messengers = new Set()
 
@@ -12,7 +11,6 @@ class _Messenger {
   constructor (callsign) {
     if (!callsign.trim()) {
       throw new Error(_('MESSENGER_NO_CALLSIGN'))
-      return null
     }
     this.#callsign = callsign
     this.#event = new events.EventEmitter()
@@ -27,8 +25,8 @@ class _Messenger {
         } = mObj
         var reply = (typeof _reply === 'function')
           ? (result) => {
-              _reply(result, this.#callsign)
-            }
+            _reply(result, this.#callsign)
+          }
           : null
         this.#onMessage(_message, _payload, _from, _callsign, reply)
       }
@@ -73,7 +71,7 @@ class _Messenger {
     this.#onMessage = callback
   }
 
-  destroy() {
+  destroy () {
     messengers.delete(this)
     this.#callsign = ''
     this.#onMessage = null
@@ -82,12 +80,9 @@ class _Messenger {
   }
 }
 
-
-
 function createMessenger (callsign) {
   return _Messenger.factory(callsign)
 }
-
 
 export default createMessenger
 
@@ -96,6 +91,6 @@ export default createMessenger
 // }
 // var myMessenger = createMessenger('myCallsign')
 // myMessenger.postMessage('targetX', 'hello', payload, reply=(result, from) => {
-//   console.log(result) 
+//   console.log(result)
 // })
 // myMessenger.onMessage(myMessageHandler)
