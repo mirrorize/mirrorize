@@ -1,40 +1,51 @@
 /* global importScripts, workbox, self */
+
+self.__WB_DISABLE_DEV_LOGS = true;
+
 (global => {
   importScripts('/_/node_modules/workbox-sw/build/workbox-sw.js')
 
-  workbox.routing.registerRoute(
+  workbox.setConfig({ debug: false })
+
+  const registerRoute = workbox.routing.registerRoute
+  const StaleWhileRevalidate = workbox.strategies.StaleWhileRevalidate
+  const CacheableResponsePlugin = workbox.cacheableResponse.CacheableResponsePlugin
+
+  registerRoute(
     new RegExp('/_/.*$'),
-    new workbox.strategies.StaleWhileRevalidate({
+    new StaleWhileRevalidate({
       cacheName: 'static',
       plugins: [
-        new workbox.cacheableResponse.CacheableResponsePlugin({
+        new CacheableResponsePlugin({
           statuses: [0, 200]
         })
       ]
     })
   )
-  workbox.routing.registerRoute(
+  /*
+  registerRoute(
     /^\/\w+\.\w+$/,
-    new workbox.strategies.StaleWhileRevalidate({
+    new StaleWhileRevalidate({
       cacheName: 'client',
       plugins: [
-        new workbox.cacheableResponse.CacheableResponsePlugin({
+        new CacheableResponsePlugin({
           statuses: [0, 200]
         })
       ]
     })
   )
-  workbox.routing.registerRoute(
+  registerRoute(
     new RegExp('/'),
-    new workbox.strategies.StaleWhileRevalidate({
+    new StaleWhileRevalidate({
       cacheName: 'root',
       plugins: [
-        new workbox.cacheableResponse.CacheableResponsePlugin({
+        new CacheableResponsePlugin({
           statuses: [0, 200]
         })
       ]
     })
   )
+  */
 
   // Set a default network-first strategy to use when
   // there is no explicit matching route:

@@ -21,7 +21,7 @@ function scanAssets (basedir, url = (fPath) => { return fPath }) {
         var tp = file.path.split('/')
         var type = tp[0]
         if (tp.length <= 1) type = ''
-        if (!['js', 'modulejs', 'css', 'templates'].includes(type)) type = ''
+        if (!['js', 'modulejs', 'css', 'templates', 'elements'].includes(type)) type = ''
         var { name, path: fPath } = file
         var rPath = path.join(basedir, fPath)
         var stat = fs.lstatSync(rPath)

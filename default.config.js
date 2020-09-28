@@ -11,8 +11,10 @@ export default {
       useHTTP2: true,
       certificate: process.env.MZ_HTTP2_CERT,
       key: process.env.MZ_HTTP2_KEY,
+      useExperimentalServerPush: false,
+      useExperimentalClientCache: false,
       fastifyOptions: {
-        logger: true
+        logger: false
       }
     },
     admin: {

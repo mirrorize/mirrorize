@@ -13,7 +13,10 @@
       "WORKER_MSG_CONSTRUCTED": "Worker:{{name}} is constructed.",
       "WORKER_NO_ASSETS_DIR": "There is something wrong in {{dir:shortPath}}, It will be ignored.",
       "WEBSERVER_SERVER_PUSH": "Server Push: {{file:shortPath}}",
-      "WEBSERVER_SERVING_ADDRESS": "Server is listening on {{address}}"
+      "WEBSERVER_SERVING_ADDRESS": "Server is listening on {{address}}",
+      "MESSENGER_NO_CALLSIGN" : "Messenger needs a callsign to identify",
+      "MESSENGER_NO_HANDLER": "There is no handler for the callsign '{{callsign}}'",
+      "MESSENGER_REPLY_TIMEOUT" : "Too long waiting for getting a reply from '{{callsign}}'"
     },
     "formatters": {
       "shortPath": {

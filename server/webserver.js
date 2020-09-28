@@ -1,19 +1,9 @@
 import _ from './systemtranslate.js'
-import { Clients, Packages, Logger, Workers, scanAssets, __basepath } from '#lib'
+import { Clients, Packages, Logger, Workers, scanAssets, __basepath, createMessenger } from '#lib'
 import fs from 'fs'
 import path from 'path'
-// import http2 from 'http2'
 import fastify from 'fastify'
 import fastifyStatic from 'fastify-static'
-import fastifyCookie from 'fastify-cookie'
-import fastifySession from 'fastify-session'
-// import pkg from 'fastify-auto-push'
-import { v4 as uuidv4 } from 'uuid'
-// import globby from 'globby'
-
-// import { request } from 'http'
-
-// const fastifyStatic = pkg.staticServe
 
 const log = Logger('WEBSERVER')
 
@@ -21,21 +11,22 @@ const __basename = path.resolve()
 
 class _Webserver {
   #config = {}
-  #server = null
+  #app = null
   #assetHTML = ''
   #http2 = true
   #mainAssets = []
   #clientAssets = {}
   #packageAssets = []
-
+  #messenger = createMessenger('WEBSERVER')
   init (config = {}) {
     return new Promise((resolve, reject) => {
       (async () => {
-        this.#config = config
+        this.#config = config.webserver
         this.#mainAssets = await this.#prepareAssets()
         this.#packageAssets = await this.#preparePackageAssets()
         this.#clientAssets = await this.#prepareClientAssets()
-        var r = this.#initServer(config.webserver)
+
+        var r = this.#initServer(this.#config)
         if (r instanceof Error) {
           reject(r)
           return
@@ -57,6 +48,8 @@ class _Webserver {
           case 'css':
             text += `<link rel="stylesheet" href="${a.url}"></link>\n`
             break
+          case 'modulejs':
+            text += `<link href="${a.url}" rel="modulepreload">`
         }
       }
       return text
@@ -66,6 +59,35 @@ class _Webserver {
     var hPath = path.join(__basename, 'client', 'index.html')
     var html = fs.readFileSync(hPath, { encoding: 'UTF-8' })
     html = html.replace('{{ASSETS}}', result)
+
+    const templateAssets = assets.reduce((result, asset) => {
+      if (asset.type === 'templates') {
+        result.push(asset.url)
+      }
+      return result
+    }, [])
+
+    const elementAssets = assets.reduce((result, asset) => {
+      if (asset.type === 'elements') {
+        result.push(asset.url)
+      }
+      return result
+    }, [])
+    const moduleAssets = assets.reduce((result, asset) => {
+      if (asset.type === 'modulejs') {
+        result.push(asset.url)
+      }
+      return result
+    }, [])
+    var conf = {
+      useExperimentalClientCache: this.#config.useExperimentalClientCache || false,
+      templateAssets: templateAssets,
+      elementAssets: elementAssets,
+      moduleAssets: moduleAssets
+    }
+
+    var scr = `const initValues = ${JSON.stringify(conf, null, 2)}`
+    html = html.replace('{{INIT}}', scr)
     this.#assetHTML = html
     return html
   }
@@ -90,59 +112,55 @@ class _Webserver {
       }
     }
     opts = Object.assign({}, opts, config.fastifyOptions)
-    var server = fastify(opts)
+
+    /* // Log beautifying someday...
+    var ffLog = Logger('WS:FASTIFY')
+    ffLog.fatal = (msg) => { console.log('oops', msg) }
+    ffLog.child = () => { return Logger('WS:FASTIFY') }
+    if (opts.logger === true) opts.logger = ffLog
+    */
+    var app = fastify(opts)
+
+    app.addHook('onResponse', (req, reply, done) => {
+      Clients.responseEnded(req.id)
+      done()
+    })
 
     const workers = Workers.getActiveWorkers()
     for (var w of workers) {
       var aPath = path.join(__basename, w.packagePath, 'assets')
       if (!fs.existsSync(aPath)) continue
-      server.register(fastifyStatic, {
+      app.register(fastifyStatic, {
         root: path.join(aPath),
         prefix: '/_/assets/' + w.name,
         decorateReply: false
       })
     }
-    server.register(fastifyStatic, {
-      root: path.join(__basename, 'node_modules'),
-      prefix: '/_/node_modules/',
-      decorateReply: false
+    ['node_modules', 'translations', 'shared', 'resources', 'clients'].forEach((dir) => {
+      app.register(fastifyStatic, {
+        root: path.join(__basename, dir),
+        prefix: path.join('/_/', dir),
+        decorateReply: false
+      })
     })
-    server.register(fastifyStatic, {
-      root: path.join(__basename, 'translations'),
-      prefix: '/_/translations/',
-      decorateReply: false
-    })
-    server.register(fastifyStatic, {
-      root: path.join(__basename, 'shared'),
-      prefix: '/_/shared/',
-      decorateReply: false
-    })
-    server.register(fastifyStatic, {
-      root: path.join(__basename, 'resources'),
-      prefix: '/_/resources/',
-      decorateReply: false
-    })
-    server.register(fastifyStatic, {
-      root: path.join(__basename, 'clients'),
-      prefix: '/_/clients/',
-      decorateReply: false
-    })
-    server.register(fastifyStatic, {
+    app.register(fastifyStatic, {
       root: path.join(__basename, 'client'),
       prefix: '/',
       decorateReply: false
     })
 
-    server.register(fastifyCookie)
-    server.register(fastifySession, {
+    /*
+
+    app.register(fastifySession, {
       secret: uuidv4(),
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
         secure: 'auto'
       }
     })
+    */
 
-    server.route({
+    app.route({
       method: 'GET',
       url: '/',
       schema: {
@@ -153,10 +171,37 @@ class _Webserver {
       }
     })
 
-    this.#server = server
+    app.route({
+      method: 'POST',
+      url: '/_SERVER',
+      handler: (req, reply) => {
+        return this.#serverHandler(req, reply)
+      }
+    })
+
+    app.route({
+      method: 'GET',
+      url: '/_SSE/:clientUID',
+      handler: (req, reply) => {
+        log.warn('<<<', req.params.clientUID)
+        const headers = {
+          'Cache-Control': 'no-cache',
+          'Content-Type': 'text/event-stream'
+        }
+        var client = Clients.findClient(req.params.clientUID)
+        if (client) {
+          var stream = client.establishSSEStream(req.id)
+          reply.headers(headers).send(stream)
+        } else {
+          reply.send('error: Invalid Client \n\n')
+        }
+      }
+    })
+
+    this.#app = app
 
     const port = config?.port || '8080'
-    server.listen(port, (err, address) => {
+    app.listen(port, (err, address) => {
       if (err) {
         log.error(err)
       } else {
@@ -165,10 +210,27 @@ class _Webserver {
     })
   }
 
+  #serverHandler (req, reply) {
+    return new Promise((resolve, reject) => {
+      const { api, payload } = req.body
+      if (api === 'CLIENT_CONNECTED') {
+        this.#clientConnected(payload.clientName, payload.clientUID)
+        reply.send({ reply: 'ok' })
+      }
+      resolve()
+    })
+  }
+
+  #clientConnected (clientName, clientUID) {
+    Clients.clientConnected(clientName, clientUID)
+  }
+
   async #serveIndex (req, reply) {
+    const stream = req.raw.stream
     var client = req.query.client || 'default'
-    req.session.client = client
     reply.type('text/html').send(this.#renderIndex(client))
+
+    // BELOW: For Server Push
     const sendFile = (stream, obj) => {
       return new Promise((resolve, reject) => {
         const headers = {}
@@ -176,7 +238,8 @@ class _Webserver {
         if (obj.lastModified) headers['last-modified'] = obj.lastModified
         if (obj.contentType) headers['content-type'] = obj.contentType
         if (obj.etag) headers.ETag = obj.etag
-        stream.respond({ ':status': 200, 'content-type': obj.contentType })
+        headers[':status'] = 200
+        stream.respond(headers)
         stream.end(fs.readFileSync(obj.filePath))
         stream.on('close', () => {
           log.info(_('WEBSERVER_SERVER_PUSH', { file: obj.filePath }))
@@ -196,8 +259,7 @@ class _Webserver {
         })
       })
     }
-    const stream = req.raw.stream
-    if (this.#http2) {
+    if (this.#http2 && this.#config.useExperimentalServerPush) {
       var assets = [...this.#mainAssets, ...this.#packageAssets, ...this.#clientAssets[client]]
       for (var a of assets) {
         await pushFile(stream, a)

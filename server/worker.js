@@ -1,10 +1,5 @@
 import _ from './systemtranslate.js'
-import { Logger, __basepath, createMessenger, scanAssets } from '#lib'
-import path from 'path'
-import fs from 'fs'
-import mime from 'mime'
-import globby from 'globby'
-import etag from 'etag'
+import { Logger, createMessenger } from '#lib'
 
 const log = Logger('WORKER')
 
@@ -13,10 +8,11 @@ class Worker {
     Object.defineProperty(this, 'config', {
       value: config
     })
-    if (config.disabled === 'true') Object.defineProperty(this, 'disabled', {
-      value: true
-    })
-    
+    if (config.disabled === 'true') {
+      Object.defineProperty(this, 'disabled', {
+        value: true
+      })
+    }
   }
 
   _constructed () {
@@ -24,29 +20,33 @@ class Worker {
       log.info(_('WORKER_MSG_CONSTRUCTED', { name: this.name }))
       this.#_initialize()
       this.onConstruction()
-      
+
       this.#_prepareAssets().then((assets) => {
         Object.defineProperty(this, 'extAssets', {
           value: assets
         })
         resolve()
       })
-      
-     resolve()
+
+      resolve()
     })
   }
 
-  postMessage (to, message, payload, reply = () => {}) {
-    this.messenger.postMessage(to, message, payload, reply)
+  postMessage (to, message, payload, timeout) {
+    return this.messenger.postMessage(to, message, payload, timeout)
   }
 
   _ready () {
     this.onReady()
   }
 
-  #_initialize() {
-    const messenger = createMessenger('WORKER:' + this.name)
+  #_initialize () {
+    const callsign = 'WORKER:' + this.name
+    const messenger = createMessenger(callsign)
     messenger.onMessage(this.onMessage.bind(this))
+    Object.defineProperty(this, 'callsign', {
+      value: callsign
+    })
     Object.defineProperty(this, 'packageURL', {
       value: '/packages/' + this.name
     })
@@ -58,40 +58,41 @@ class Worker {
     })
   }
 
-  
   #_prepareAssets () {
-    return new Promise(async (resolve, reject) => {
-      var assets = []
-      var extern = [
-        { name: 'injectExternJS', type: 'js'},
-        { name: 'injectExternModuleJS', type: 'modulejs'},
-        { name: 'injectExternCSS', type: 'css'}
-      ]
-      for (var { name, type } of extern) {
-        if (typeof this[name] === 'function') {
-          var ie = this[name]()
-          if (Array.isArray(ie)) {
-            for (var url of ie) {
-              assets.push({
-                type: type,
-                url: url,
-                internal: false,
-              })
+    return new Promise((resolve, reject) => {
+      (async () => {
+        var assets = []
+        var extern = [
+          { name: 'injectExternJS', type: 'js' },
+          { name: 'injectExternModuleJS', type: 'modulejs' },
+          { name: 'injectExternCSS', type: 'css' }
+        ]
+        for (var { name, type } of extern) {
+          if (typeof this[name] === 'function') {
+            var ie = this[name]()
+            if (Array.isArray(ie)) {
+              for (var url of ie) {
+                assets.push({
+                  type: type,
+                  url: url,
+                  internal: false
+                })
+              }
             }
           }
         }
-      }
-      resolve(assets)
+        resolve(assets)
+      })()
     })
   }
 
   injectExternJS () { return [] }
   injectExternModuleJS () { return [] }
-  injectExternCSS () { return [] } 
+  injectExternCSS () { return [] }
 
-  onConstruction() {}
-  onReady() {}
-  onMessage(callback = ()=>{}) {}
+  onConstruction () {}
+  onReady () {}
+  onMessage (message, payload, members, reply) {}
 }
 
 export default Worker

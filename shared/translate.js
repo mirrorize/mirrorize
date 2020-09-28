@@ -28,7 +28,7 @@ class _Translate {
     }
     if (!locales.includes('en')) locales.push('en')
     locales = locales.map((lc) => {
-      return new String(lc).replace(/_/g, '-') // For Non-BCP47 format.
+      return lc.replace(/_/g, '-') // For Non-BCP47 format.
     })
 
     if (isBrowser) {
@@ -39,10 +39,10 @@ class _Translate {
           log.log(e.message)
           log.warn(`${l} is a invalid locale identifier. (Standard:BCP-47)`)
         }
-        return filtered      
+        return filtered
       }, [])
     }
-    
+
     this.#locales = locales
   }
 
@@ -50,9 +50,8 @@ class _Translate {
     return this.#locales
   }
 
-  registerFormatter(format, func) {
-    if (typeof func === 'function')
-    this.#formatters[format] = func
+  registerFormatter (format, func) {
+    if (typeof func === 'function') { this.#formatters[format] = func }
   }
 
   loadTranslations (data = {}) {
@@ -66,7 +65,7 @@ class _Translate {
       log.warn('Invalid translation data')
       return false
     }
-    for(var locale of this.#locales) {
+    for (var locale of this.#locales) {
       if (!locale) continue
       while (locale) {
         var termjs = locale
@@ -90,13 +89,12 @@ class _Translate {
     }
   }
 
-
   translate (key, opts = {}) {
     var text = key
     var formatters = {}
     var pluralRules = {}
     var locale = null
-    for(var l of this.#locales) {
+    for (var l of this.#locales) {
       if (this.#translations[l]?.translations?.[key]) {
         text = this.#translations[l].translations[key]
         formatters = this.#translations[l].formatters || {}
@@ -108,8 +106,8 @@ class _Translate {
     if (Object.keys(opts).length < 1) return text
     for (const prop of Object.keys(opts)) {
       var pattern = `{{((?<t>${prop})((?:\\:)(?<f>\\w+))?((?:\\?)(?<r>\\w+))?)}}`
-      var rx = new RegExp(pattern, "gm")
-      var found = [...text.matchAll(rx)].map((i)=>{
+      var rx = new RegExp(pattern, 'gm')
+      var found = [...text.matchAll(rx)].map((i) => {
         var val = opts[prop]
         var ph = i[0]
         var groups = i?.groups
@@ -131,9 +129,9 @@ class _Translate {
         return i?.groups
       })
     }
+    if (!found) return text
     return text
   }
-
 }
 
 function Translate (locale = []) {
@@ -157,7 +155,7 @@ function Translate (locale = []) {
   })
   r.registerFormatter('shorten', function (locales, text, options = {}) {
     if (typeof text !== 'string') text = text.toString() || ''
-    var { maxLength = 40, pre = 20, post = 20, omitted="..." } = options
+    var { maxLength = 40, pre = 20, post = 20, omitted = '...' } = options
     if (pre + post > maxLength) maxLength = pre + post
     if (text.length < maxLength) return text
     return text.slice(0, pre) + omitted + text.slice((0 - post))
@@ -165,7 +163,7 @@ function Translate (locale = []) {
   r.registerFormatter('cuttext', function (locales, text, options = {}) {
     if (typeof text !== 'string') text = text.toString() || ''
     if (!options.search) return text
-    var { omitted="...", search } = options
+    var { omitted = '...', search } = options
     var len = search.length
     return omitted + text.slice(text.indexOf(search) + len)
   })

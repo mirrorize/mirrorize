@@ -1,25 +1,22 @@
 import './server/env.js'
 import path from 'path'
-import fs from 'fs'
+// import fs from 'fs'
 import { Logger, Configure, Packages, Webserver, Workers, Clients } from '#lib'
 import _ from './server/systemtranslate.js'
-import { ClientRequest } from 'http'
+// import { ClientRequest } from 'http'
 
 const __dirname = path.resolve()
 
 const log = Logger('INDEX')
 
-
-
-process.on("uncaughtException", (err) => {
+process.on('uncaughtException', (err) => {
   log.error(err)
   log.error(_('INDEX_ERR_UNCAUGHT_EXCEPTION'))
 })
-process.on("unhandledRejection", (reason, p) => {
+process.on('unhandledRejection', (reason, p) => {
   log.error(_('INDEX_ERR_UR_AT_PROMISE', { reason: reason }), p)
   log.error(_('INDEX_ERR_UNHANDLED_REJECTION'))
 })
-
 
 const scenario = async () => {
   const scenarioError = (error) => {
@@ -34,11 +31,7 @@ const scenario = async () => {
   await Workers.init(config, Packages.getActivePackages()).catch(scenarioError)
   await Webserver.init(config.server || {}).catch(scenarioError)
 
-
-
   await Workers.ready()
-
-
 
   // await Admin.init((config.adminserver ?? config.webserver) || {}, Packages.getPackages()).catch(scenarioError)
   // await Webserver.registAssetRoutes(Packages.getPackages()).catch(scenarioError)

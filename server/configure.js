@@ -1,8 +1,6 @@
-import fs from 'fs'
 import path from 'path'
 import { Logger } from '#lib'
 import _ from './systemtranslate.js'
-
 
 const log = Logger('CONFIGURE')
 
@@ -28,7 +26,7 @@ function Configure (fPath) {
     try {
       (async () => {
         const invalidConfig = (file) => {
-          log.warn(_('CONFIGURE_INVALID_CONFIG_FILE', {file: file}))
+          log.warn(_('CONFIGURE_INVALID_CONFIG_FILE', { file: file }))
           log.warn(_('CONFIGURE_INVALID_CONFIG_FILE2'))
         }
         var cp = path.join(fPath, 'custom.config.js')

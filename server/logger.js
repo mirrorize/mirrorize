@@ -30,5 +30,4 @@ function Logger (name = null) {
   return log.getLogger(name)
 }
 
-
 export default Logger
